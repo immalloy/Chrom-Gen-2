@@ -1,0 +1,194 @@
+# file: .github/workflows/cross-platform-build.yml
+name: Cross-Platform Builds
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ "v*" ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: write
+
+env:
+  APP_NAME: ChromaticGen
+  ENTRYPOINT: src/main.py
+  PY_VER: "3.10"   # Keep consistent; wxPython wheels are solid here
+
+jobs:
+  # ---------- Windows (x64 + x86/win32) ----------
+  windows:
+    name: Windows (${{ matrix.arch }})
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x64, x86]  # x86 = win32
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python (${{ env.PY_VER }}, ${{ matrix.arch }})
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PY_VER }}
+          architecture: ${{ matrix.arch }}
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-win-${{ matrix.arch }}-${{ env.PY_VER }}-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            pip-win-${{ matrix.arch }}-${{ env.PY_VER }}-
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip wheel setuptools
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build (PyInstaller)
+        shell: bash
+        run: |
+          pyinstaller --noconfirm --windowed --name "${APP_NAME}" "${ENTRYPOINT}"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${ { env.APP_NAME } }-windows-${{ matrix.arch }}
+          path: |
+            dist/${{ env.APP_NAME }}.exe
+          if-no-files-found: error
+          retention-days: 14
+
+  # ---------- Linux (x86_64) ----------
+  linux:
+    name: Linux (x86_64)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python (${{ env.PY_VER }})
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PY_VER }}
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-linux-${{ env.PY_VER }}-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            pip-linux-${{ env.PY_VER }}-
+
+      # wxPython 4.2.1 provides manylinux wheels; usually no extra system deps are needed.
+      # If your runner ever fails to resolve, consider preinstalling: libgtk-3-0, libglu1-mesa.
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip wheel setuptools
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build (PyInstaller)
+        run: |
+          pyinstaller --noconfirm --name "${APP_NAME}" "${ENTRYPOINT}"
+
+      - name: Tar binary (recommended for Linux)
+        run: |
+          tar -C dist -czf ${APP_NAME}-linux-x86_64.tar.gz ${APP_NAME}
+        shell: bash
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.APP_NAME }}-linux-x86_64
+          path: |
+            ${ { env.APP_NAME } }-linux-x86_64.tar.gz
+          if-no-files-found: error
+          retention-days: 14
+
+  # ---------- macOS (Intel + Apple Silicon) ----------
+  macos:
+    # Two runners: macos-13 (Intel/x86_64), macos-14 (ARM64)
+    name: macOS (${{ matrix.runner }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-13   # Intel
+            arch: x86_64
+          - runner: macos-14   # Apple Silicon
+            arch: arm64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python (${{ env.PY_VER }})
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PY_VER }}
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Caches/pip
+          key: pip-macos-${{ matrix.arch }}-${{ env.PY_VER }}-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            pip-macos-${{ matrix.arch }}-${{ env.PY_VER }}-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip wheel setuptools
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build (PyInstaller .app)
+        run: |
+          pyinstaller --noconfirm --windowed --name "${APP_NAME}" "${ENTRYPOINT}"
+
+      - name: Zip .app bundle
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent "dist/${APP_NAME}.app" "${APP_NAME}-macOS-${{ matrix.arch }}.zip"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.APP_NAME }}-macOS-${{ matrix.arch }}
+          path: |
+            ${ { env.APP_NAME } }-macOS-${{ matrix.arch }}.zip
+          if-no-files-found: error
+          retention-days: 14
+
+  # ---------- Release on tag (collect all artifacts) ----------
+  release:
+    name: Release on tag
+    needs: [windows, linux, macos]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prepare
+        run: mkdir -p release
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: ${{ env.APP_NAME }}-*
+          path: release
+          merge-multiple: true
+
+      - name: List files
+        run: ls -R release
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release/${{ env.APP_NAME }}-windows-x64/${{ env.APP_NAME }}.exe
+            release/${{ env.APP_NAME }}-windows-x86/${{ env.APP_NAME }}.exe
+            release/${{ env.APP_NAME }}-linux-x86_64.tar.gz
+            release/${{ env.APP_NAME }}-macOS-x86_64.zip
+            release/${{ env.APP_NAME }}-macOS-arm64.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
