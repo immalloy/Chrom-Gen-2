@@ -4,11 +4,26 @@
 
 #You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+import os
+import sys
+from os.path import exists
+
+import numpy  # Ensures PyInstaller bundles the numpy dependency used by parselmouth
 import parselmouth
 import wx
 import app_ui
-import os
-from os.path import exists
+
+
+def _configure_runtime_environment():
+    """Prepare paths when running from a bundled PyInstaller executable."""
+
+    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+        os.environ.setdefault("PATH", "")
+        # Make sure bundled native libraries (e.g., numpy or parselmouth binaries) are discoverable.
+        os.environ["PATH"] = os.pathsep.join([sys._MEIPASS, os.environ["PATH"]])
+
+
+_configure_runtime_environment()
 
 
 class GeneratorGUI(app_ui.AppFrame):
