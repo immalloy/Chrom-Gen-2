@@ -15,7 +15,12 @@ import app_ui
 
 
 def _configure_runtime_environment():
-    """Prepare paths when running from a bundled PyInstaller executable."""
+    """Prepare module and library lookup paths in standalone builds."""
+
+    # Ensure the application's directory (or PyInstaller extraction dir) is on sys.path.
+    bundle_root = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
+    if bundle_root not in sys.path:
+        sys.path.insert(0, bundle_root)
 
     if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
         os.environ.setdefault("PATH", "")
