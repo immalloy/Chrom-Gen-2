@@ -22,7 +22,9 @@ binaries = collect_dynamic_libs("parselmouth") + collect_dynamic_libs("numpy")
 datas = (
     collect_data_files("parselmouth")
     + collect_data_files("wx")
-    + copy_metadata("parselmouth")
+    # Package is published to PyPI as "praat-parselmouth", so use the distribution
+    # name here to ensure PyInstaller can locate the metadata during the build.
+    + copy_metadata("praat-parselmouth")
     + [("icon.ico", ".")]
 )
 
