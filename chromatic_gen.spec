@@ -1,7 +1,7 @@
 # Custom PyInstaller spec to ensure all dependencies are bundled for the Windows executable.
 # Build with: pyinstaller chromatic_gen.spec
 
-from PyInstaller.building.build_main import Analysis, EXE, PYZ
+from PyInstaller.building.build_main import Analysis, COLLECT, EXE, PYZ
 from PyInstaller.utils.hooks import (
     collect_data_files,
     collect_dynamic_libs,
@@ -47,10 +47,8 @@ pyz = PYZ(analysis.pure, analysis.zipped_data, cipher=block_cipher)
 exe = EXE(
     pyz,
     analysis.scripts,
-    analysis.binaries,
-    analysis.zipfiles,
-    analysis.datas,
     [],
+    exclude_binaries=True,
     name="chromatic_gen",
     debug=False,
     bootloader_ignore_signals=False,
@@ -64,4 +62,15 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
     icon="icon.ico",
+)
+
+coll = COLLECT(
+    exe,
+    analysis.binaries,
+    analysis.zipfiles,
+    analysis.datas,
+    strip=False,
+    upx=True,
+    upx_exclude=[],
+    name="chromatic_gen",
 )
