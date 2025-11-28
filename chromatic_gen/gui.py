@@ -15,7 +15,8 @@ class GeneratorGUI(app_ui.AppFrame):
         gap_seconds = float(self.gapInput.GetValue())
         semitones = int(self.rangeInput.GetValue())
         start_note_index = self.startNoteChoice.GetSelection()
-        start_octave_index = self.startOctaveChoice.GetSelection()
+        start_octave_value = int(self.startOctaveChoice.GetStringSelection())
+        start_octave_index = start_octave_value - 2
         pitched = self.pitchedCheck.IsChecked()
         dump_samples = self.samplesCheck.IsChecked()
 
