@@ -1,0 +1,4 @@
+wxPython
+praat-parselmouth
+numpy
+pyinstaller
