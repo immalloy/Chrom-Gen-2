@@ -36,11 +36,4 @@ class GeneratorGUI(app_ui.AppFrame):
             wx.MessageBox(str(error), "Generation failed", wx.ICON_ERROR)
 
 
-def run_app() -> None:
-    app = wx.App(False)
-    frame = GeneratorGUI(None)
-    frame.Show(True)
-    app.MainLoop()
-
-
-__all__ = ["run_app", "GeneratorGUI"]
+__all__ = ["GeneratorGUI"]

@@ -22,8 +22,8 @@ python chromatic_gen.py
 
 ## Packaging
 
-The previous PyInstaller command still works with the new layout:
+Build a directory-based PyInstaller bundle to avoid relying on ``--onefile``:
 
 ```bash
-pyinstaller --onefile --noconsole --icon=icon.ico --hidden-import numpy chromatic_gen.py
+pyinstaller --onedir --noconsole --icon=icon.ico --hidden-import numpy chromatic_gen.py
 ```
