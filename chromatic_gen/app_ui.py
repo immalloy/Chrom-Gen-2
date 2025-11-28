@@ -81,9 +81,9 @@ class AppFrame ( wx.Frame ):
 
 		startOctaveSizer.Add( self.startOctaveText, 0, wx.ALIGN_CENTER|wx.ALL, 5 )
 
-		startOctaveChoiceChoices = [ u"2", u"3", u"4" ]
+		startOctaveChoiceChoices = [ u"0", u"1", u"2", u"3", u"4", u"5", u"6", u"7", u"8" ]
 		self.startOctaveChoice = wx.Choice( self, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, startOctaveChoiceChoices, 0 )
-		self.startOctaveChoice.SetSelection( 0 )
+		self.startOctaveChoice.SetSelection( 2 )
 		startOctaveSizer.Add( self.startOctaveChoice, 0, wx.ALIGN_CENTER|wx.ALL, 5 )
 
 
