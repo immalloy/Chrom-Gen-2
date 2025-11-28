@@ -8,17 +8,14 @@ import os
 import sys
 from os.path import exists
 
-import numpy  # Ensures PyInstaller bundles the numpy dependency used by parselmouth
-import parselmouth
-import wx
-import app_ui
-
 
 def _configure_runtime_environment():
     """Prepare module and library lookup paths in standalone builds."""
 
-    # Ensure the application's directory (or PyInstaller extraction dir) is on sys.path.
     bundle_root = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
+
+    # Ensure the application's directory (or PyInstaller extraction dir) is on sys.path
+    # *before* importing local modules such as ``app_ui``.
     if bundle_root not in sys.path:
         sys.path.insert(0, bundle_root)
 
@@ -29,6 +26,11 @@ def _configure_runtime_environment():
 
 
 _configure_runtime_environment()
+
+import numpy  # Ensures PyInstaller bundles the numpy dependency used by parselmouth
+import parselmouth
+import wx
+import app_ui
 
 
 class GeneratorGUI(app_ui.AppFrame):
@@ -83,10 +85,18 @@ class GeneratorGUI(app_ui.AppFrame):
                 if not os.path.exists(sample_path + os.sep + "pitched_samples"):
                     os.makedirs(sample_path + os.sep + "pitched_samples")
                 for pitched_sound in pitched_sounds:
-                    pitched_sound.save(sample_path + os.sep + "pitched_samples" + os.sep + ""f"pitched_{1 + pitched_sounds.index(pitched_sound)}.wav", "WAV")
+                    pitched_sound.save(
+                        sample_path + os.sep + "pitched_samples" + os.sep + ""f"pitched_{1 + pitched_sounds.index(pitched_sound)}.wav",
+                        "WAV",
+                    )
 
 
-app = wx.App(False)
-frame = GeneratorGUI(None)
-frame.Show(True)
-app.MainLoop()
+def main():
+    app = wx.App(False)
+    frame = GeneratorGUI(None)
+    frame.Show(True)
+    app.MainLoop()
+
+
+if __name__ == "__main__":
+    main()
