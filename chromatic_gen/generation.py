@@ -41,10 +41,12 @@ def _pitch_sample(
     manipulation = parselmouth.praat.call(sample, "To Manipulation", 0.05, 60, 600)
     pitch_tier = parselmouth.praat.call(manipulation, "Extract pitch tier")
 
+    midi_note = base_note + 12 * base_octave + semitone_offset
+
     parselmouth.praat.call(
         pitch_tier,
         "Formula",
-        f"32.703 * (2 ^ ({semitone_offset + base_note + 12 * base_octave + 12}/12))",
+        f"16.3516 * (2 ^ ({midi_note}/12))",
     )
     parselmouth.praat.call([pitch_tier, manipulation], "Replace pitch tier")
 
@@ -60,7 +62,7 @@ def generate_chromatic_scale(
     semitones: int,
     gap_seconds: float,
     starting_note_index: int,
-    starting_octave_index: int,
+    starting_octave: int,
     pitched: bool,
     dump_samples: bool,
 ) -> Path:
@@ -82,7 +84,7 @@ def generate_chromatic_scale(
         base_sample = samples[offset % len(samples)]
         if pitched:
             pitched_sound = _pitch_sample(
-                base_sample, offset, starting_note_index, starting_octave_index
+                base_sample, offset, starting_note_index, starting_octave
             )
         else:
             pitched_sound = base_sample
