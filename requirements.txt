@@ -1,4 +1,0 @@
-numpy
-praat-parselmouth
-wxPython
-PyInstaller
